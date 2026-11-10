@@ -3,22 +3,92 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Ça marche</title>
+    <title>En construction</title>
     <style>
+      :root {
+        --bg: #f4f6fa;
+        --card: #ffffff;
+        --text: #1d2433;
+        --muted: #5f6b7a;
+        --accent: #1f4e79;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #11151c;
+          --card: #1a202b;
+          --text: #e6e9ef;
+          --muted: #9aa5b4;
+          --accent: #7fb2e5;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
       body {
-        font-family: system-ui, sans-serif;
-        max-width: 36rem;
-        margin: 4rem auto;
-        padding: 0 1rem;
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px 16px;
+        background: var(--bg);
+        color: var(--text);
+        font-family:
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          sans-serif;
         line-height: 1.5;
+      }
+      main {
+        width: 100%;
+        max-width: 34rem;
+        background: var(--card);
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        text-align: center;
+      }
+      .tag {
+        display: inline-block;
+        font-size: 0.8rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        padding: 0.15rem 0.7rem;
+      }
+      h1 {
+        margin: 1rem 0 0.5rem;
+        font-size: clamp(1.8rem, 6vw, 2.4rem);
+      }
+      h1 span {
+        color: var(--accent);
+      }
+      p {
+        margin: 0.4rem 0;
+        color: var(--muted);
       }
     </style>
   </head>
   <body>
-    <h1>Ça marche !</h1>
-    <p>
-      Ton site est en ligne. Demande maintenant à Claude de construire ton
-      projet.
-    </p>
+    <main>
+      <span class="tag">En construction</span>
+      <h1>Le site de <span id="who">cet élève</span></h1>
+      <p>Ce site est en train d'être construit avec Claude Code.</p>
+      <p>Reviens bientôt !</p>
+    </main>
+    <script>
+      // The app name is the first part of the address: luka.lab.herbiserver.eu -> Luka
+      var name = location.hostname.split(".")[0];
+      if (
+        /^[a-z][a-z0-9-]+$/.test(name) &&
+        location.hostname.split(".").length > 3
+      ) {
+        var pretty = name.charAt(0).toUpperCase() + name.slice(1);
+        document.getElementById("who").textContent = pretty;
+        document.title = "Le site de " + pretty;
+      }
+    </script>
   </body>
 </html>
