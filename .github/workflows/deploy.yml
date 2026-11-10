@@ -57,7 +57,8 @@ jobs:
           DOKKU_SSH_KEY: ${{ secrets.DOKKU_SSH_KEY }}
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$DOKKU_SSH_KEY" > ~/.ssh/lab_key
+          # tr: a key pasted into the web form can come back with CRLF line ends.
+          printf '%s\n' "$DOKKU_SSH_KEY" | tr -d '\r' > ~/.ssh/lab_key
           chmod 600 ~/.ssh/lab_key
           printf '%s\n' "$LAB_HOST_KEY" > ~/.ssh/known_hosts
           printf 'Host %s\n  User dokku\n  IdentityFile ~/.ssh/lab_key\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' "$LAB_HOST" > ~/.ssh/config
