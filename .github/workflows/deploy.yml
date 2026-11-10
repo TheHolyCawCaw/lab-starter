@@ -1,0 +1,89 @@
+# Déploiement sur le serveur de la classe (Dokku). Chaque push sur main met le
+# site en ligne : https://<nom de l'app>.lab.herbiserver.eu/
+# Ne pas modifier sans le prof.
+name: Déploiement
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  LAB_HOST: lab.herbiserver.eu
+  LAB_HOST_KEY: "lab.herbiserver.eu ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPxrnl4MV90mdYNHqVvuOviiPk+GplHf6BK/49OYwOUt"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Vérifier la configuration
+        id: cfg
+        env:
+          DOKKU_SSH_KEY: ${{ secrets.DOKKU_SSH_KEY }}
+        run: |
+          app="$(tr -d '[:space:]' < .lab-app 2>/dev/null || true)"
+          if [ -z "$app" ]; then
+            echo "::notice::Pas encore de nom d'app dans .lab-app : rien à déployer."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! printf '%s' "$app" | grep -Eq '^[a-z][a-z0-9-]{1,29}$'; then
+            echo "::error::.lab-app contient « $app » : il faut le nom donné par le prof (minuscules, chiffres, tirets)."
+            exit 1
+          fi
+          if [ -z "$DOKKU_SSH_KEY" ]; then
+            echo "::notice::Le secret DOKKU_SSH_KEY manque (Settings > Secrets and variables > Actions) : rien à déployer."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "app=$app" >> "$GITHUB_OUTPUT"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Préparer SSH
+        if: steps.cfg.outputs.ready == 'true'
+        env:
+          DOKKU_SSH_KEY: ${{ secrets.DOKKU_SSH_KEY }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DOKKU_SSH_KEY" > ~/.ssh/lab_key
+          chmod 600 ~/.ssh/lab_key
+          printf '%s\n' "$LAB_HOST_KEY" > ~/.ssh/known_hosts
+          printf 'Host %s\n  User dokku\n  IdentityFile ~/.ssh/lab_key\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' "$LAB_HOST" > ~/.ssh/config
+
+      - name: Déployer
+        if: steps.cfg.outputs.ready == 'true'
+        run: git push --force "dokku@${LAB_HOST}:${{ steps.cfg.outputs.app }}" HEAD:refs/heads/main
+
+      - name: Journaux de l'app (80 dernières lignes)
+        if: always() && steps.cfg.outputs.ready == 'true'
+        run: ssh "$LAB_HOST" logs "${{ steps.cfg.outputs.app }}" --num 80 || true
+
+      - name: Vérifier le site
+        if: steps.cfg.outputs.ready == 'true'
+        run: |
+          app="${{ steps.cfg.outputs.app }}"
+          code=000
+          for i in $(seq 1 12); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "https://${app}.${LAB_HOST}/" || true)"
+            if [ "$code" = "000" ]; then
+              code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://${app}.${LAB_HOST}/" || true)"
+            fi
+            case "$code" in
+              2??|3??) echo "Le site répond ($code) : https://${app}.${LAB_HOST}/"; exit 0 ;;
+            esac
+            sleep 5
+          done
+          echo "::error::Le site ne répond pas correctement (dernier code : $code). Regarde l'étape « Journaux de l'app »."
+          exit 1
