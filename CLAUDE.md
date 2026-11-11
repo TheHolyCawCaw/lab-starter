@@ -37,10 +37,9 @@ vient de `git remote get-url origin`.
 Dans une session locale où `gh` est connecté, `gh run watch` marche aussi.
 
 Si le run se termine sans rien déployer avec une « notice », le message dit ce
-qui manque : `.lab-app` vide, ou le secret `DOKKU_SSH_KEY` absent. Seul l'élève
-peut ajouter le secret, sur GitHub : Settings > Secrets and variables >
-Actions > New repository secret, nom `DOKKU_SSH_KEY`, valeur = la clé donnée
-par le prof. Explique-lui où cliquer.
+qui manque : `.lab-app` vide, ou le secret `DOKKU_SSH_KEY` absent. Le prof
+met ce secret en place ; s'il manque, dis à l'élève de prévenir le prof. Ne
+cherche pas à le contourner.
 
 ## Ce que le serveur sait faire tourner
 
