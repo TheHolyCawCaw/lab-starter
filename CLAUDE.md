@@ -23,9 +23,11 @@ serveur de la classe (Dokku).
 Vérifie toujours le résultat, et corrige si ça a échoué. `{owner}/{repo}`
 vient de `git remote get-url origin`.
 
-1. Dernier run :
-   `gh api "repos/{owner}/{repo}/actions/runs?branch=main&per_page=1" --jq '.workflow_runs[0] | {id, status, conclusion, html_url}'`
-   Attends que `status` soit `completed` (réessaie toutes les 20 secondes).
+1. Le run du commit que tu viens de pousser sur `main` :
+   `gh api "repos/{owner}/{repo}/actions/runs?head_sha=$(git rev-parse HEAD)&per_page=1" --jq '.workflow_runs[0] | {id, status, conclusion, html_url}'`
+   Juste après le push, il n'existe parfois pas encore (`null`) : ce n'est pas
+   une erreur, réessaie. Ne prends pas le run d'un commit précédent. Attends
+   que `status` soit `completed` (réessaie toutes les 20 secondes).
 2. Jobs du run :
    `gh api repos/{owner}/{repo}/actions/runs/<id>/jobs --jq '.jobs[] | {id, conclusion}'`
 3. Journal complet du job :
@@ -35,6 +37,11 @@ vient de `git remote get-url origin`.
    - l'étape « Vérifier le site » montre le code HTTP du site
 
 Dans une session locale où `gh` est connecté, `gh run watch` marche aussi.
+
+Depuis une session cloud, tu ne peux pas ouvrir le site toi-même (le réseau de
+la session ne l'autorise pas) : l'étape « Vérifier le site » du run le fait.
+Si `gh api` refuse l'accès aux runs (403 ou 404), demande à l'élève d'ouvrir
+l'onglet **Actions** de son dépôt et de te copier le message d'erreur.
 
 Si le run se termine sans rien déployer avec une « notice », le message dit ce
 qui manque : `.lab-app` vide, ou le secret `DOKKU_SSH_KEY` absent. Le prof
